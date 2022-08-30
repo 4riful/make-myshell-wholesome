@@ -12,10 +12,8 @@ end="\e[0m"
 
 
 function set_zsh(){
-    sudo apt install zsh -y > /dev/null 2>&1;
-    if [ "$(command -v zsh)" ]; then
-     chsh -s /usr/bin/zsh && zsh
-    fi
+    sudo apt install zsh ;
+    chsh -s /usr/bin/zsh && zsh;
   
 }
 
@@ -54,7 +52,7 @@ function set_extension() {
 
 
 function sedding_theme() {
-  cd $HOME
+  cd $HOME ;
   replace="powerlevel10k/powerlevel10k"
   sed -i "s#robbyrussell#$replace#" .zshrc #change the zshrc path
 }
@@ -88,16 +86,16 @@ function bannner(){
 
 
 
-execution parts start form here
+# execution parts start form here
 bannner
 echo -e "\n\n${red}[PROITP] : PLEASE MAKE SURE THAT YOU HAVE INSTALLED NERD FONT ON YOUR SYSTEM CORRECTLY , IF NOT PLEASE GO HERE AND FIND ONE FOR YOURS${end}"
 echo -e '[LINK]   : https://www.nerdfonts.com/font-downloads'
-read -p "Are you want to install and configure zsh as your deafault shelll ?[Y/n]" usrinput
-if [ "$usrinput" == "yY " ]; then
-echo "Installing zsh to your system ......."
-set_zsh
+echo -e "Are you want to install and configure zsh as your deafault shelll ?[y/n]" 
+read userinput
+if [ "$userinput" == "y" ]; then
+set_zsh && echo -e "Installing zsh to your system ......." 
 else
-echo 'bye'
+ echo 'bye'
 fi
 echo 'Installing Oh-my-zsh'
 set_ohmyzsh
