@@ -67,6 +67,7 @@ function set_colorls(){
   cd $HOME;
   echo "source \$(dirname \$(gem which colorls))/tab_complete.sh" >> .zshrc
   echo "alias ls='colorls'" >> .zshrc
+  echo "alias update='apt update && apt dist-upgrade'" 
 
 }
 
