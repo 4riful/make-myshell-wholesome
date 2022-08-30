@@ -12,9 +12,7 @@ end="\e[0m"
 
 
 function set_zsh(){
-    sudo apt install zsh ;
-    chsh -s /usr/bin/zsh && zsh;
-  
+    sudo apt install zsh ;  
 }
 
 
@@ -34,39 +32,37 @@ function set_ohmyzsh(){
 
 function clonep10k(){
   cd $HOME;
-  git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ;
+  git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/powerlevel10k
+  echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc;
+
 }
 
 
 
 
 function set_extension() {
-  cd $HOME ;
-  git clone https://github.com/zsh-users/zsh-autosuggestions.git $ZSH_CUSTOM/plugins/zsh-autosuggestions ;
-  git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $ZSH_CUSTOM/plugins/zsh-syntax-highlighting ;
-  sed -e "s/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/" .zshrc
-
+  cd /root/.oh-my-zsh/custom/plugins;
+  git clone https://github.com/zsh-users/zsh-autosuggestions.git ;
+  git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ;
+  cd ;
+  sed -i "s/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/" .zshrc
+ echo 'done'
+ 
 
 }
 
-
-
-function sedding_theme() {
-  cd $HOME ;
-  replace="powerlevel10k/powerlevel10k"
-  sed -i "s#robbyrussell#$replace#" .zshrc #change the zshrc path
-}
 
 
 
 
 function set_colorls(){
-  sudo apt install ruby-full -y > /dev/null 2>&1 && gem install colorls > /dev/null 2>&1 ;
-  cd $HOME;
+  sudo apt install ruby-full -y ;
+  gem install colorls ;
+  cd $HOME; 
   echo "source \$(dirname \$(gem which colorls))/tab_complete.sh" >> .zshrc
   echo "alias ls='colorls'" >> .zshrc
-  echo "alias update='apt update && apt dist-upgrade'" 
-
+  echo "alias update='apt update && apt dist-upgrade'" >> .zshrc
+  
 }
 
 
@@ -87,24 +83,29 @@ function bannner(){
 
 
 # execution parts start form here
+# bannner
+# echo -e "\n\n${red}[PROITP] : PLEASE MAKE SURE THAT YOU HAVE INSTALLED NERD FONT ON YOUR SYSTEM CORRECTLY , IF NOT PLEASE GO HERE AND FIND ONE FOR YOURS${end}"
+# echo -e '[LINK]   : https://www.nerdfonts.com/font-downloads'
+# echo -e "Are you want to install and configure zsh as your deafault shelll ?[y/n]" 
+# read userinput
+# if [ "$userinput" == "y" ]; then
+# set_zsh && echo -e "Installing zsh to your system ......." 
+# else
+#  echo 'bye'
+# fi
+# echo 'Installing Oh-my-zsh'
+# #set_ohmyzsh
+
+# echo 'Downloading and Configuring zsh-autocompletation and zsh-autosuggestion'
+# # set_extension
+# echo 'Installing colorls '
+# set_colorls
+# echo "Now setting up p10k as deafault theme "
+# # sedding_theme
+# echo 'Done , Now restart your terminal or simply type zsh'
+# #clonep10k
+
 bannner
-echo -e "\n\n${red}[PROITP] : PLEASE MAKE SURE THAT YOU HAVE INSTALLED NERD FONT ON YOUR SYSTEM CORRECTLY , IF NOT PLEASE GO HERE AND FIND ONE FOR YOURS${end}"
-echo -e '[LINK]   : https://www.nerdfonts.com/font-downloads'
-echo -e "Are you want to install and configure zsh as your deafault shelll ?[y/n]" 
-read userinput
-if [ "$userinput" == "y" ]; then
-set_zsh && echo -e "Installing zsh to your system ......." 
-else
- echo 'bye'
-fi
-echo 'Installing Oh-my-zsh'
-set_ohmyzsh
-echo 'cloning Powerlevel10k '
-clonep10k
-echo 'Downloading and Configuring zsh-autocompletation and zsh-autosuggestion'
 set_extension
-echo 'Installing colorls '
 set_colorls
-echo "Now setting up p10k as deafault theme "
-sedding_theme
-echo 'Done , Now restart your terminal or simply type zsh'
+clonep10k
