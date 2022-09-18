@@ -56,7 +56,7 @@ function set_extension() {
 
 
 function set_colorls(){
-  sudo apt install ruby-full -y ;
+  sudo apt install ruby-dev gcc make -y ;
   gem install colorls ;
   cd $HOME; 
   echo "source \$(dirname \$(gem which colorls))/tab_complete.sh" >> .zshrc
@@ -106,6 +106,7 @@ function bannner(){
 # #clonep10k
 
 bannner
+setzsh
 set_extension
 set_colorls
 clonep10k
