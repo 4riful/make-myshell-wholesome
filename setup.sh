@@ -107,6 +107,7 @@ function bannner(){
 
 bannner
 setzsh
+set_ohmyzsh
 set_extension
 set_colorls
 clonep10k
