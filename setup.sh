@@ -2,72 +2,120 @@
 #Author : Ariful Anik aka xettabyte
 # echo 'This script will going to change your boring shell to wholesome one'
 # colorplate
-bold="\e[1m"
-red="\e[1;31m"
-green="\e[32m"
-blue="\e[34m"
-cyan="\e[0;36m"
-yellow='\033[0;33m'
-end="\e[0m"
 
 
-function set_zsh(){
-    sudo apt install zsh ;  
+# Define text colors and emojis
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+WARNING='⚠️ '
+CHECK='✔️ '
+
+# Warning message with emoji and color
+function warning() {
+  echo -e "${YELLOW}${WARNING}$1${NC}"
 }
 
-
-
-function set_ohmyzsh(){
-    wget https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh ;
-    if [ -f "install.sh" ]; then
-     echo "installer script downloaded succesfully";chmod +x install.sh;bash install.sh ;
-    else
-      echo "installer script Not found" 
-    fi
-  
+# Success message with emoji and color
+function success() {
+  echo -e "${GREEN}${CHECK}$1${NC}"
 }
 
-
-
-
-function clonep10k(){
-  cd $HOME;
-  git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/powerlevel10k
-  echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc;
-
+# Check for confirmation before proceeding
+function confirm() {
+  read -p "${YELLOW}$1 [y/n]${NC} " -n 1 -r
+  echo
+  if [[ $REPLY =~ ^[Yy]$ ]]
+  then
+    return 0
+  else
+    return 1
+  fi
 }
 
+# Install dependencies for terminal colors and zsh
+warning "This script will install dependencies for terminal colors and set zsh as the default shell."
+if confirm "Do you want to proceed?"
+then
+  sudo apt-get update
+  sudo apt-get install -y git zsh curl
+  success "Dependencies installed successfully."
+else
+  warning "Installation cancelled by user."
+  exit 1
+fi
 
+# Set zsh as the default shell
+warning "This script will set zsh as the default shell."
+if confirm "Do you want to proceed?"
+then
+  chsh -s /bin/zsh
 
+success "Zsh set as the default shell successfully."
+else
+warning "Installation cancelled by user."
+exit 1
+fi
 
-function set_extension() {
-  cd /root/.oh-my-zsh/custom/plugins;
-  git clone https://github.com/zsh-users/zsh-autosuggestions.git ;
-  git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ;
-  cd ;
-  sed -i "s/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/" .zshrc
- echo 'done'
- 
+#Install Oh My Zsh
+warning "This script will install Oh My Zsh."
+if confirm "Do you want to proceed?"
+then
+sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+success "Oh My Zsh installed successfully."
+else
+warning "Installation cancelled by user."
+exit 1
+fi
 
-}
+#Install zsh-autosuggestions
+warning "This script will install zsh-autosuggestions."
+if confirm "Do you want to proceed?"
+then
+git clone https://github.com/zsh-users/zsh-autosuggestions.git $ZSH_CUSTOM/plugins/zsh-autosuggestions
+success "zsh-autosuggestions installed successfully."
+else
+warning "Installation cancelled by user."
+exit 1
+fi
 
+#Install zsh-completions
+warning "This script will install zsh-completions."
+if confirm "Do you want to proceed?"
+then
+git clone https://github.com/zsh-users/zsh-completions.git $ZSH_CUSTOM/plugins/zsh-completions
+success "zsh-completions installed successfully."
+else
+warning "Installation cancelled by user."
+exit 1
+fi
 
+#Install Powerlevel10k theme for Oh My Zsh
+warning "This script will install the Powerlevel10k theme for Oh My Zsh."
+if confirm "Do you want to proceed?"
+then
+git clone https://github.com/romkatv/powerlevel10k.git $ZSH_CUSTOM/themes/powerlevel10k
+sed -i 's/^ZSH_THEME=.*/ZSH_THEME="powerlevel10k/powerlevel10k"/' ~/.zshrc
+success "Powerlevel10k theme installed successfully."
+else
+warning "Installation cancelled by user."
+exit 1
+fi
 
+#Reload zsh configuration
+warning "This script will reload the zsh configuration."
+if confirm "Do you want to proceed?"
+then
+source ~/.zshrc
+success "Zsh configuration reloaded successfully."
+else
+warning "Installation cancelled by user."
+exit 1
+fi
 
-
-function set_colorls(){
-  sudo apt install ruby-dev gcc make -y ;
-  gem install colorls ;
-  cd $HOME; 
-  echo "source \$(dirname \$(gem which colorls))/tab_complete.sh" >> .zshrc
-  echo "alias ls='colorls'" >> .zshrc
-  echo "alias update='apt update && apt dist-upgrade'" >> .zshrc
-  
-}
-
-
-
-
+#Display final success message
+echo -e "${GREEN}All installations completed successfully.${NC}"
 
 
 function bannner(){
@@ -82,32 +130,7 @@ function bannner(){
 
 
 
-# execution parts start form here
-# bannner
-# echo -e "\n\n${red}[PROITP] : PLEASE MAKE SURE THAT YOU HAVE INSTALLED NERD FONT ON YOUR SYSTEM CORRECTLY , IF NOT PLEASE GO HERE AND FIND ONE FOR YOURS${end}"
-# echo -e '[LINK]   : https://www.nerdfonts.com/font-downloads'
-# echo -e "Are you want to install and configure zsh as your deafault shelll ?[y/n]" 
-# read userinput
-# if [ "$userinput" == "y" ]; then
-# set_zsh && echo -e "Installing zsh to your system ......." 
-# else
-#  echo 'bye'
-# fi
-# echo 'Installing Oh-my-zsh'
-# #set_ohmyzsh
 
-# echo 'Downloading and Configuring zsh-autocompletation and zsh-autosuggestion'
-# # set_extension
-# echo 'Installing colorls '
-# set_colorls
-# echo "Now setting up p10k as deafault theme "
-# # sedding_theme
-# echo 'Done , Now restart your terminal or simply type zsh'
-# #clonep10k
 
-bannner
-setzsh
-set_ohmyzsh
-set_extension
-set_colorls
-clonep10k
+#bannner
+
