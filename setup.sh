@@ -117,6 +117,7 @@ fi
 
 #Display final success message
 echo -e "${GREEN}All installations completed successfully.${NC}"
+echo -e "${YELLOW}Please logout and log back in for the changes to take effect.${NC}"
 
 
 function bannner(){
