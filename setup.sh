@@ -19,8 +19,9 @@ function warning() {
 
 # Success message with emoji and color
 function success() {
-  echo -e "${GREEN}${CHECK}$1${NC}"
+  echo -e "${GREEN}${CHECK} $1 ${NC}"
 }
+
 
 # Check for confirmation before proceeding
 function confirm() {
@@ -33,7 +34,7 @@ function confirm() {
     return 1
   fi
 }
-
+bannner
 # Install dependencies for terminal colors and zsh
 warning "This script will install dependencies for terminal colors and set zsh as the default shell."
 if confirm "Do you want to proceed?"
@@ -120,10 +121,11 @@ echo -e "${GREEN}All installations completed successfully.${NC}"
 
 function bannner(){
      echo -e '\n'
-     echo -e " ${green}█▀▄▀█ ▄▀█ █▄▀ █▀▀ ▄▄ █▀▄▀█ █▀▀ ▄▄ █░█░█ █░█ █▀█ █░░ █▀▀ █▀ █▀█ █▀▄▀█ █▀▀ "
-     echo -e " █░▀░█ █▀█ █░█ ██▄ ░░ █░▀░█ ██▄ ░░ ▀▄▀▄▀ █▀█ █▄█ █▄▄ ██▄ ▄█ █▄█ █░▀░█ ██▄${end} "
-     echo -e "                                coded with ${red}<3 ${end}By ${cyan}Ariful Anik AKA xettabye"
+     echo -e " ${GREEN}█▀▄▀█ ▄▀█ █▄▀ █▀▀ ▄▄ █▀▄▀█ █▀▀ ▄▄ █░█░█ █░█ █▀█ █░░ █▀▀ █▀ █▀█ █▀▄▀█ █▀▀ "
+     echo -e " █░▀░█ █▀█ █░█ ██▄ ░░ █░▀░█ ██▄ ░░ ▀▄▀▄▀ █▀█ █▄█ █▄▄ ██▄ ▄█ █▄█ █░▀░█ ██▄${NC} "
+     echo -e "                                coded with ${RED}<3 ${NC}By ${GREEN}Ariful Anik AKA xettabyte${NC}"
 }
+
 
 
 
