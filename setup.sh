@@ -25,7 +25,7 @@ function success() {
 
 # Check for confirmation before proceeding
 function confirm() {
-  read -p "${YELLOW}$1 [y/n]${NC} " -n 1 -r
+  read -p $'\e[33m'"$1 [y/n]"$'\e[0m ' -n 1 -r
   echo
   if [[ $REPLY =~ ^[Yy]$ ]]
   then
