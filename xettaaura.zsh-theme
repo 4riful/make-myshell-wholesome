@@ -45,9 +45,11 @@ git_prompt_info() {
 }
 
 parse_git_dirty() {
-  local status=$(git status --porcelain 2>&dev/null)
-  [ -n "$status" ] && echo " ${ZSH_THEME_GIT_PROMPT_DIRTY}" || echo " ${ZSH_THEME_GIT_PROMPT_CLEAN}"
+  local git_status=$(git status --porcelain 2>/dev/null)
+  [ -n "$git_status" ] && echo " ${ZSH_THEME_GIT_PROMPT_DIRTY}" || echo " ${ZSH_THEME_GIT_PROMPT_CLEAN}"
 }
+
+
 
 # Build the prompt
 PROMPT='
