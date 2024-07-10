@@ -104,6 +104,13 @@ EOF
     select_theme "AuroraModern"
 }
 
+install_powerlevel10k() {
+    echo "🔽 Installing Powerlevel10k theme..."
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM}/themes/powerlevel10k
+    sed -i "s/ZSH_THEME=\".*\"/ZSH_THEME=\"powerlevel10k\/powerlevel10k\"/" ~/.zshrc
+    echo "✅ Powerlevel10k theme installed and configured."
+}
+
 # Main menu for selections
 echo "📋 Select the features you want to install/configure:"
 echo "  1) Install Zsh"
@@ -112,8 +119,9 @@ echo "  3) Install zsh-autosuggestions & zsh-syntax-highlighting plugins"
 echo "  4) Set theme (Enter theme name after selection)"
 echo "  5) Install colorls"
 echo "  6) Install AuroraModern Theme"
-echo "  7) Exit"
-read -p "Enter your choice (1-7): " choice
+echo "  7) Install Powerlevel10k theme"
+echo "  8) Exit"
+read -p "Enter your choice (1-8): " choice
 
 case $choice in
     1) install_zsh ;;
@@ -125,7 +133,8 @@ case $choice in
         select_theme $theme ;;
     5) install_colorls ;;
     6) install_aurora_modern_theme ;;
-    7) echo "👋 Exiting script." ;;
+    7) install_powerlevel10k ;;
+    8) echo "👋 Exiting script." ;;
     *) echo "❌ Invalid option selected." ;;
 esac
 
