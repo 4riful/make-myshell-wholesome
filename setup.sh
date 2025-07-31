@@ -2,7 +2,7 @@
 
 # Script Configuration
 SCRIPT_VERSION="2.0.0"
-GITHUB_REPO="your-username/zsh-setup-script"  # Replace with your actual repo
+GITHUB_REPO="y4riful/make-myshell-wholesome"  # Replace with your actual repo
 GITHUB_RAW_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main/zsh-setup.sh"
 SCRIPT_PATH="$(realpath "$0")"
 ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
