@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Script Configuration
-SCRIPT_VERSION="2.1.1"
-GITHUB_REPO="your-username/zsh-setup-script"  # Replace with your actual repo
-GITHUB_RAW_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main/zsh-setup.sh"
+SCRIPT_VERSION="2.0.0"
+GITHUB_REPO="4riful/make-myshell-wholesome"
+GITHUB_RAW_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main/setup.sh"
 SCRIPT_PATH="$(realpath "$0")"
 ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
 
@@ -44,6 +44,12 @@ check_command() {
 
 # Auto-update functionality
 check_for_updates() {
+    # Skip update check if no repository is configured
+    if [[ -z "$GITHUB_REPO" ]]; then
+        print_status "Auto-update is disabled (no repository configured)"
+        return 0
+    fi
+    
     print_status "Checking for script updates..."
     
     if ! check_command curl; then
@@ -51,12 +57,12 @@ check_for_updates() {
         return 1
     fi
     
-    # Get remote version
+    # Get remote version with timeout
     local remote_content
-    remote_content=$(curl -s "$GITHUB_RAW_URL" 2>/dev/null)
+    remote_content=$(timeout 5s curl -s "$GITHUB_RAW_URL" 2>/dev/null)
     
     if [[ $? -ne 0 || -z "$remote_content" ]]; then
-        print_warning "Could not fetch remote script. Continuing with current version."
+        print_warning "Could not fetch remote script (network issue or repository not found)"
         return 1
     fi
     
@@ -65,7 +71,7 @@ check_for_updates() {
     remote_version=$(echo "$remote_content" | grep -o 'SCRIPT_VERSION="[^"]*"' | cut -d'"' -f2)
     
     if [[ -z "$remote_version" ]]; then
-        print_warning "Could not determine remote version. Continuing with current version."
+        print_warning "Could not determine remote version. Script format may have changed."
         return 1
     fi
     
@@ -417,7 +423,11 @@ auto_install() {
 show_version() {
     echo -e "${CYAN}Zsh Setup Script${NC}"
     echo -e "Version: ${GREEN}$SCRIPT_VERSION${NC}"
-    echo -e "Repository: ${BLUE}https://github.com/$GITHUB_REPO${NC}"
+    if [[ -n "$GITHUB_REPO" ]]; then
+        echo -e "Repository: ${BLUE}https://github.com/$GITHUB_REPO${NC}"
+    else
+        echo -e "Repository: ${YELLOW}Not configured (auto-update disabled)${NC}"
+    fi
     echo ""
 }
 
@@ -446,8 +456,8 @@ show_menu() {
 
 # Main execution
 main() {
-    # Check for updates on startup (with timeout)
-    if [[ "${1}" != "--skip-update" ]]; then
+    # Check for updates on startup (with timeout) - only if repo is configured
+    if [[ "${1}" != "--skip-update" && -n "$GITHUB_REPO" ]]; then
         timeout 10s bash -c 'check_for_updates' 2>/dev/null || print_warning "Update check timed out"
         echo ""
     fi
