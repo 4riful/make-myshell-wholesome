@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Script Configuration
-SCRIPT_VERSION="2.0.0"
-GITHUB_REPO="4riful/make-myshell-wholesome"  # Replace with your actual repo
+SCRIPT_VERSION="2.1.1"
+GITHUB_REPO="your-username/zsh-setup-script"  # Replace with your actual repo
 GITHUB_RAW_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main/zsh-setup.sh"
 SCRIPT_PATH="$(realpath "$0")"
 ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
@@ -245,79 +245,38 @@ install_aurora_minimal_theme() {
     
     local theme_path="${ZSH_CUSTOM}/themes/AuroraMinimal.zsh-theme"
     cat <<'EOF' > "$theme_path"
-# AuroraMinimal Theme for Oh My Zsh
-# Clean, fast, and minimalistic theme with smart fallbacks
-
-# Check if terminal supports Unicode properly
-supports_unicode() {
-    [[ "${LC_ALL:-${LC_CTYPE:-${LANG}}}" =~ UTF-8$ ]] && [[ "$TERM" != "linux" ]]
-}
-
-# Minimalistic OS detection
-get_os_indicator() {
-    if supports_unicode; then
-        case "$(uname -s)" in
-            Linux*) echo "🐧" ;;
-            Darwin*) echo "🍎" ;;
-            *) echo "💻" ;;
-        esac
-    else
-        case "$(uname -s)" in
-            Linux*) echo "L" ;;
-            Darwin*) echo "M" ;;
-            *) echo "?" ;;
-        esac
-    fi
-}
-
-# Set symbols based on Unicode support
-if supports_unicode; then
-    readonly USER_ICON="👤"
-    readonly DIR_ICON="📂"
-    readonly GIT_ICON="⎇"
-    readonly DIRTY_ICON="●"
-    readonly CLEAN_ICON="✓"
-    readonly ARROW="→"
-else
-    readonly USER_ICON="@"
-    readonly DIR_ICON="~"
-    readonly GIT_ICON="git"
-    readonly DIRTY_ICON="●"
-    readonly CLEAN_ICON="+"
-    readonly ARROW=">"
-fi
-
-readonly OS_INDICATOR="$(get_os_indicator)"
+# AuroraMinimal Theme - Ultra Clean & Minimal
+# Simple two-line prompt with essential info only
 
 # Clean color definitions
 readonly C_USER="%F{green}"
-readonly C_HOST="%F{blue}"
+readonly C_HOST="%F{blue}" 
 readonly C_DIR="%F{cyan}"
 readonly C_GIT="%F{magenta}"
 readonly C_DIRTY="%F{red}"
 readonly C_CLEAN="%F{green}"
-readonly C_PROMPT="%F{yellow}"
-readonly C_TIME="%F{white}"
+readonly C_PROMPT="%F{white}"
+readonly C_TIME="%F{242}"
 readonly C_RESET="%f"
 
-# Fast git status check
-git_prompt_info() {
-    # Quick check if we're in a git repo
+# Lightning-fast git status
+git_info() {
     git rev-parse --is-inside-work-tree &>/dev/null || return
     
     local branch
     branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
     [[ -z "$branch" ]] && return
     
-    # Fast dirty check
+    # Ultra-fast dirty check
+    local status=""
     if [[ -n "$(git status --porcelain 2>/dev/null | head -1)" ]]; then
-        echo " ${C_GIT}${GIT_ICON} ${branch} ${C_DIRTY}${DIRTY_ICON}${C_RESET}"
-    else
-        echo " ${C_GIT}${GIT_ICON} ${branch} ${C_CLEAN}${CLEAN_ICON}${C_RESET}"
+        status="${C_DIRTY}*${C_RESET}"
     fi
+    
+    echo " ${C_GIT}($branch)${status}"
 }
 
-# Minimal command execution time (only for long commands)
+# Optional: Show execution time for slow commands
 preexec() {
     timer=$(($(date +%s%0N)/1000000))
 }
@@ -326,42 +285,38 @@ precmd() {
     if [ $timer ]; then
         local now=$(($(date +%s%0N)/1000000))
         local elapsed=$(($now-$timer))
-        if (( elapsed > 3000 )); then  # Show only if > 3 seconds
-            export RPS1="${C_TIME}⏱ ${elapsed}ms${C_RESET}"
-        else
-            export RPS1="${C_TIME}%D{%H:%M}${C_RESET}"
+        if (( elapsed > 2000 )); then
+            echo "${C_TIME}⏱ ${elapsed}ms${C_RESET}"
         fi
         unset timer
-    else
-        export RPS1="${C_TIME}%D{%H:%M}${C_RESET}"
     fi
 }
 
-# Clean, single-line prompt
-PROMPT='${C_USER}${USER_ICON} %n${C_RESET} ${C_HOST}${OS_INDICATOR} %m${C_RESET} ${C_DIR}${DIR_ICON} %2~${C_RESET}$(git_prompt_info) ${C_PROMPT}${ARROW}${C_RESET} '
+# Ultra-minimal two-line prompt
+PROMPT='${C_USER}%n${C_RESET}@${C_HOST}%m${C_RESET} ${C_DIR}%~${C_RESET}$(git_info)
+${C_PROMPT}> ${C_RESET}'
+
+# Clean right prompt with just time
+RPROMPT='${C_TIME}%D{%H:%M}${C_RESET}'
 
 # Enable prompt substitution
 setopt PROMPT_SUBST
 
-# Performance optimizations
+# Performance settings
 setopt NO_BEEP
 setopt HIST_VERIFY
 setopt SHARE_HISTORY
 setopt APPEND_HISTORY
-setopt INC_APPEND_HISTORY
 setopt HIST_IGNORE_DUPS
 setopt HIST_IGNORE_SPACE
-setopt HIST_REDUCE_BLANKS
 
-# Essential aliases
+# Clean, essential aliases
 alias ..='cd ..'
 alias ...='cd ../..'
+alias ....='cd ../../..'
 alias l='ls -la'
 alias ll='ls -l'
 alias la='ls -la'
-alias grep='grep --color=auto'
-alias fgrep='fgrep --color=auto'
-alias egrep='egrep --color=auto'
 
 EOF
     
