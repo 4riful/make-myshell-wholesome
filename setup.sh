@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script Configuration
-SCRIPT_VERSION="2.0.0"
+SCRIPT_VERSION="2.0.1"
 GITHUB_REPO="4riful/make-myshell-wholesome"
 GITHUB_RAW_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main/setup.sh"
 SCRIPT_PATH="$(realpath "$0")"
