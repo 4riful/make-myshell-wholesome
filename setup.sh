@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Script Configuration
+SCRIPT_VERSION="2.0.0"
+GITHUB_REPO="your-username/zsh-setup-script"  # Replace with your actual repo
+GITHUB_RAW_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main/zsh-setup.sh"
+SCRIPT_PATH="$(realpath "$0")"
 ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
 
 # Colors for output
@@ -33,6 +38,77 @@ check_command() {
     if command -v "$1" &> /dev/null; then
         return 0
     else
+        return 1
+    fi
+}
+
+# Auto-update functionality
+check_for_updates() {
+    print_status "Checking for script updates..."
+    
+    if ! check_command curl; then
+        print_warning "curl not found. Cannot check for updates."
+        return 1
+    fi
+    
+    # Get remote version
+    local remote_content
+    remote_content=$(curl -s "$GITHUB_RAW_URL" 2>/dev/null)
+    
+    if [[ $? -ne 0 || -z "$remote_content" ]]; then
+        print_warning "Could not fetch remote script. Continuing with current version."
+        return 1
+    fi
+    
+    # Extract remote version
+    local remote_version
+    remote_version=$(echo "$remote_content" | grep -o 'SCRIPT_VERSION="[^"]*"' | cut -d'"' -f2)
+    
+    if [[ -z "$remote_version" ]]; then
+        print_warning "Could not determine remote version. Continuing with current version."
+        return 1
+    fi
+    
+    # Compare versions
+    if [[ "$remote_version" != "$SCRIPT_VERSION" ]]; then
+        print_status "New version available: $remote_version (current: $SCRIPT_VERSION)"
+        read -p "Would you like to update the script? (y/N): " update_confirm
+        
+        if [[ $update_confirm =~ ^[Yy]$ ]]; then
+            update_script "$remote_content"
+            return $?
+        else
+            print_status "Continuing with current version"
+            return 0
+        fi
+    else
+        print_success "Script is up to date (version: $SCRIPT_VERSION)"
+        return 0
+    fi
+}
+
+update_script() {
+    local remote_content="$1"
+    print_status "Updating script..."
+    
+    # Backup current script
+    local backup_path="${SCRIPT_PATH}.backup.$(date +%Y%m%d_%H%M%S)"
+    cp "$SCRIPT_PATH" "$backup_path"
+    
+    # Write new content
+    echo "$remote_content" > "$SCRIPT_PATH"
+    
+    if [[ $? -eq 0 ]]; then
+        chmod +x "$SCRIPT_PATH"
+        print_success "Script updated successfully!"
+        print_status "Backup saved to: $backup_path"
+        print_status "Restarting script with new version..."
+        echo ""
+        exec "$SCRIPT_PATH" "$@"
+    else
+        print_error "Failed to update script"
+        # Restore backup
+        cp "$backup_path" "$SCRIPT_PATH"
         return 1
     fi
 }
@@ -73,7 +149,7 @@ install_oh_my_zsh() {
 }
 
 install_plugins() {
-    print_status "Installing zsh-autosuggestions and zsh-syntax-highlighting plugins..."
+    print_status "Installing essential plugins..."
     
     # Create plugins directory if it doesn't exist
     mkdir -p "${ZSH_CUSTOM}/plugins"
@@ -92,13 +168,19 @@ install_plugins() {
         print_warning "zsh-syntax-highlighting already installed"
     fi
     
+    # Install zsh-completions for better tab completion
+    if [ ! -d "${ZSH_CUSTOM}/plugins/zsh-completions" ]; then
+        git clone https://github.com/zsh-users/zsh-completions "${ZSH_CUSTOM}/plugins/zsh-completions"
+    else
+        print_warning "zsh-completions already installed"
+    fi
+    
     # Update .zshrc with plugins
     if [ -f "$HOME/.zshrc" ]; then
-        # Check if plugins line exists and update it
         if grep -q "^plugins=" "$HOME/.zshrc"; then
-            sed -i 's/^plugins=.*/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/' "$HOME/.zshrc"
+            sed -i 's/^plugins=.*/plugins=(git zsh-autosuggestions zsh-syntax-highlighting zsh-completions)/' "$HOME/.zshrc"
         else
-            echo 'plugins=(git zsh-autosuggestions zsh-syntax-highlighting)' >> "$HOME/.zshrc"
+            echo 'plugins=(git zsh-autosuggestions zsh-syntax-highlighting zsh-completions)' >> "$HOME/.zshrc"
         fi
         print_success "Plugins installed and configured"
     else
@@ -121,21 +203,32 @@ select_theme() {
 }
 
 install_colorls() {
-    print_status "Installing Ruby and development tools..."
-    sudo apt-get update
-    sudo apt-get install ruby-full build-essential libssl-dev -y
+    print_status "Installing colorls for better file listings..."
     
-    print_status "Installing colorls..."
-    sudo gem install colorls
+    # Check if Ruby is installed
+    if ! check_command ruby; then
+        print_status "Installing Ruby and development tools..."
+        sudo apt-get update
+        sudo apt-get install ruby-full build-essential libssl-dev -y
+    fi
     
-    # Add colorls alias to .zshrc if not already present
+    # Install colorls
+    if ! check_command colorls; then
+        sudo gem install colorls
+    else
+        print_warning "colorls is already installed"
+    fi
+    
+    # Add colorls aliases to .zshrc if not already present
     if [ -f "$HOME/.zshrc" ]; then
         if ! grep -q 'alias ls="colorls' "$HOME/.zshrc"; then
             echo '' >> "$HOME/.zshrc"
-            echo '# Colorls aliases' >> "$HOME/.zshrc"
-            echo 'alias ls="colorls --group-directories-first"' >> "$HOME/.zshrc"
-            echo 'alias ll="colorls -l --group-directories-first"' >> "$HOME/.zshrc"
-            echo 'alias la="colorls -la --group-directories-first"' >> "$HOME/.zshrc"
+            echo '# Enhanced file listing with colorls' >> "$HOME/.zshrc"
+            echo 'if command -v colorls &> /dev/null; then' >> "$HOME/.zshrc"
+            echo '  alias ls="colorls --group-directories-first --almost-all"' >> "$HOME/.zshrc"
+            echo '  alias ll="colorls -l --group-directories-first"' >> "$HOME/.zshrc"
+            echo '  alias la="colorls -la --group-directories-first"' >> "$HOME/.zshrc"
+            echo 'fi' >> "$HOME/.zshrc"
         fi
         print_success "colorls installed and configured"
     else
@@ -144,143 +237,139 @@ install_colorls() {
     fi
 }
 
-install_aurora_modern_theme() {
-    print_status "Setting up AuroraModern Theme for Oh My Zsh..."
+install_aurora_minimal_theme() {
+    print_status "Installing AuroraMinimal Theme..."
     
     # Create themes directory if it doesn't exist
     mkdir -p "${ZSH_CUSTOM}/themes"
     
-    local theme_path="${ZSH_CUSTOM}/themes/AuroraModern.zsh-theme"
+    local theme_path="${ZSH_CUSTOM}/themes/AuroraMinimal.zsh-theme"
     cat <<'EOF' > "$theme_path"
-# AuroraModern Theme for Oh My Zsh - Enhanced Version
-# Modern, clean theme with excellent fallback support
+# AuroraMinimal Theme for Oh My Zsh
+# Clean, fast, and minimalistic theme with smart fallbacks
 
-# Function to detect if terminal supports Unicode
+# Check if terminal supports Unicode properly
 supports_unicode() {
-    [[ "${LC_ALL:-${LC_CTYPE:-${LANG}}}" =~ UTF-8$ ]] || [[ "$TERM_PROGRAM" == "vscode" ]] || [[ "$TERM_PROGRAM" == "iTerm.app" ]]
+    [[ "${LC_ALL:-${LC_CTYPE:-${LANG}}}" =~ UTF-8$ ]] && [[ "$TERM" != "linux" ]]
 }
 
-# Function to get OS-specific symbol
-get_os_symbol() {
-    local os_name="$(uname -s)"
-    
+# Minimalistic OS detection
+get_os_indicator() {
     if supports_unicode; then
-        case "$os_name" in
-            Linux*)
-                if [[ -f /etc/os-release ]]; then
-                    local distro=$(grep -w NAME /etc/os-release | cut -d "=" -f 2 | tr -d '"' | head -n 1)
-                    case "$distro" in
-                        *Ubuntu*) echo "🐧" ;;
-                        *Debian*) echo "🌀" ;;
-                        *Arch*) echo "🏔️" ;;
-                        *) echo "🐧" ;;
-                    esac
-                else
-                    echo "🐧"
-                fi
-                ;;
+        case "$(uname -s)" in
+            Linux*) echo "🐧" ;;
             Darwin*) echo "🍎" ;;
             *) echo "💻" ;;
         esac
     else
-        case "$os_name" in
-            Linux*) echo "[L]" ;;
-            Darwin*) echo "[M]" ;;
-            *) echo "[?]" ;;
+        case "$(uname -s)" in
+            Linux*) echo "L" ;;
+            Darwin*) echo "M" ;;
+            *) echo "?" ;;
         esac
     fi
 }
 
 # Set symbols based on Unicode support
 if supports_unicode; then
-    local user_symbol="👤"
-    local directory_symbol="📁"
-    local git_branch_symbol="🌿"
-    local dirty_status_symbol="⚡"
-    local clean_status_symbol="✨"
-    local arrow_symbol="→"
+    readonly USER_ICON="👤"
+    readonly DIR_ICON="📂"
+    readonly GIT_ICON="⎇"
+    readonly DIRTY_ICON="●"
+    readonly CLEAN_ICON="✓"
+    readonly ARROW="→"
 else
-    local user_symbol="@"
-    local directory_symbol="~"
-    local git_branch_symbol="git:"
-    local dirty_status_symbol="*"
-    local clean_status_symbol="+"
-    local arrow_symbol=">"
+    readonly USER_ICON="@"
+    readonly DIR_ICON="~"
+    readonly GIT_ICON="git"
+    readonly DIRTY_ICON="●"
+    readonly CLEAN_ICON="+"
+    readonly ARROW=">"
 fi
 
-local host_symbol="$(get_os_symbol)"
+readonly OS_INDICATOR="$(get_os_indicator)"
 
-# Define colors with better contrast
-local user_color="%{$fg_bold[green]%}"
-local host_color="%{$fg_bold[blue]%}"
-local directory_color="%{$fg_bold[cyan]%}"
-local git_color="%{$fg_bold[magenta]%}"
-local dirty_color="%{$fg_bold[red]%}"
-local clean_color="%{$fg_bold[green]%}"
-local prompt_color="%{$fg_bold[yellow]%}"
-local time_color="%{$fg[white]%}"
-local reset_color="%{$reset_color%}"
+# Clean color definitions
+readonly C_USER="%F{green}"
+readonly C_HOST="%F{blue}"
+readonly C_DIR="%F{cyan}"
+readonly C_GIT="%F{magenta}"
+readonly C_DIRTY="%F{red}"
+readonly C_CLEAN="%F{green}"
+readonly C_PROMPT="%F{yellow}"
+readonly C_TIME="%F{white}"
+readonly C_RESET="%f"
 
-# Enhanced Git prompt function
-aurora_git_prompt_info() {
-    if git rev-parse --git-dir > /dev/null 2>&1; then
-        local branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
-        if [[ -n "$branch" ]]; then
-            local git_status=$(git status --porcelain 2>/dev/null)
-            local status_symbol
-            
-            if [[ -n "$git_status" ]]; then
-                status_symbol="${dirty_color}${dirty_status_symbol}"
-            else
-                status_symbol="${clean_color}${clean_status_symbol}"
-            fi
-            
-            echo " ${git_color}${git_branch_symbol} ${branch} ${status_symbol}${reset_color}"
-        fi
+# Fast git status check
+git_prompt_info() {
+    # Quick check if we're in a git repo
+    git rev-parse --is-inside-work-tree &>/dev/null || return
+    
+    local branch
+    branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
+    [[ -z "$branch" ]] && return
+    
+    # Fast dirty check
+    if [[ -n "$(git status --porcelain 2>/dev/null | head -1)" ]]; then
+        echo " ${C_GIT}${GIT_ICON} ${branch} ${C_DIRTY}${DIRTY_ICON}${C_RESET}"
+    else
+        echo " ${C_GIT}${GIT_ICON} ${branch} ${C_CLEAN}${CLEAN_ICON}${C_RESET}"
     fi
 }
 
-# Function to get current time
-get_time() {
-    echo "${time_color}%D{%H:%M:%S}${reset_color}"
+# Minimal command execution time (only for long commands)
+preexec() {
+    timer=$(($(date +%s%0N)/1000000))
 }
 
-# Function to show last command status
-command_status() {
-    echo "%(?..${dirty_color}✘${reset_color} )"
+precmd() {
+    if [ $timer ]; then
+        local now=$(($(date +%s%0N)/1000000))
+        local elapsed=$(($now-$timer))
+        if (( elapsed > 3000 )); then  # Show only if > 3 seconds
+            export RPS1="${C_TIME}⏱ ${elapsed}ms${C_RESET}"
+        else
+            export RPS1="${C_TIME}%D{%H:%M}${C_RESET}"
+        fi
+        unset timer
+    else
+        export RPS1="${C_TIME}%D{%H:%M}${C_RESET}"
+    fi
 }
 
-# Build the modern prompt
-PROMPT='
-╭─ ${user_color}${user_symbol} %n${reset_color} ${host_color}${host_symbol} %m${reset_color} ${directory_color}${directory_symbol} %3~${reset_color}$(aurora_git_prompt_info)
-╰─ $(command_status)${prompt_color}${arrow_symbol}${reset_color} '
+# Clean, single-line prompt
+PROMPT='${C_USER}${USER_ICON} %n${C_RESET} ${C_HOST}${OS_INDICATOR} %m${C_RESET} ${C_DIR}${DIR_ICON} %2~${C_RESET}$(git_prompt_info) ${C_PROMPT}${ARROW}${C_RESET} '
 
-# Right prompt with time
-RPROMPT='$(get_time)'
-
-# Additional configurations for better experience
+# Enable prompt substitution
 setopt PROMPT_SUBST
-autoload -U colors && colors
 
-# Custom aliases for the theme
+# Performance optimizations
+setopt NO_BEEP
+setopt HIST_VERIFY
+setopt SHARE_HISTORY
+setopt APPEND_HISTORY
+setopt INC_APPEND_HISTORY
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_REDUCE_BLANKS
+
+# Essential aliases
 alias ..='cd ..'
 alias ...='cd ../..'
-alias ....='cd ../../..'
-alias l='ls -lah'
-alias la='ls -lAh'
-alias ll='ls -lh'
-alias ls='ls --color=tty'
-alias lsa='ls -lah'
-alias md='mkdir -p'
-alias rd='rmdir'
+alias l='ls -la'
+alias ll='ls -l'
+alias la='ls -la'
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
 
 EOF
     
     if [ -f "$theme_path" ]; then
-        print_success "AuroraModern Theme created successfully"
-        select_theme "AuroraModern"
+        print_success "AuroraMinimal Theme created successfully"
+        select_theme "AuroraMinimal"
     else
-        print_error "Failed to create AuroraModern Theme"
+        print_error "Failed to create AuroraMinimal Theme"
         return 1
     fi
 }
@@ -288,7 +377,6 @@ EOF
 install_powerlevel10k() {
     print_status "Installing Powerlevel10k theme..."
     
-    # Create themes directory if it doesn't exist
     mkdir -p "${ZSH_CUSTOM}/themes"
     
     if [ ! -d "${ZSH_CUSTOM}/themes/powerlevel10k" ]; then
@@ -311,14 +399,44 @@ set_zsh_default() {
     fi
 }
 
+optimize_zsh_performance() {
+    print_status "Applying performance optimizations..."
+    
+    if [ -f "$HOME/.zshrc" ]; then
+        # Add performance optimizations to .zshrc if not already present
+        if ! grep -q "# Performance optimizations" "$HOME/.zshrc"; then
+            cat <<'EOF' >> "$HOME/.zshrc"
+
+# Performance optimizations
+DISABLE_UPDATE_PROMPT="true"
+DISABLE_AUTO_UPDATE="true"
+COMPLETION_WAITING_DOTS="true"
+HIST_STAMPS="yyyy-mm-dd"
+
+# History configuration
+HISTFILE=~/.zsh_history
+HISTSIZE=10000
+SAVEHIST=10000
+
+# Disable unnecessary features for speed
+DISABLE_MAGIC_FUNCTIONS="true"
+DISABLE_AUTO_TITLE="true"
+
+EOF
+        fi
+        print_success "Performance optimizations applied"
+    fi
+}
+
 auto_install() {
     print_status "Starting automatic installation..."
-    echo -e "${CYAN}This will install:${NC}"
-    echo "  • Zsh"
-    echo "  • Oh My Zsh"
-    echo "  • Useful plugins (autosuggestions, syntax highlighting)"
-    echo "  • AuroraModern theme"
-    echo "  • Colorls for better file listings"
+    echo -e "${CYAN}This will install and configure:${NC}"
+    echo "  • Zsh shell"
+    echo "  • Oh My Zsh framework"
+    echo "  • Essential plugins (autosuggestions, syntax highlighting, completions)"
+    echo "  • AuroraMinimal theme (clean and fast)"
+    echo "  • Colorls for enhanced file listings"
+    echo "  • Performance optimizations"
     echo ""
     
     read -p "Continue with automatic installation? (y/N): " confirm
@@ -327,37 +445,58 @@ auto_install() {
         install_oh_my_zsh || return 1
         install_plugins || return 1
         install_colorls || return 1
-        install_aurora_modern_theme || return 1
+        install_aurora_minimal_theme || return 1
+        optimize_zsh_performance || return 1
         set_zsh_default
         
         print_success "Automatic installation completed!"
         print_status "Please restart your terminal or run 'source ~/.zshrc' to apply changes"
+        echo ""
+        print_status "The AuroraMinimal theme is designed to be fast and clean."
+        print_status "It automatically adapts to your terminal's Unicode support."
     else
         print_status "Automatic installation cancelled"
     fi
 }
 
+show_version() {
+    echo -e "${CYAN}Zsh Setup Script${NC}"
+    echo -e "Version: ${GREEN}$SCRIPT_VERSION${NC}"
+    echo -e "Repository: ${BLUE}https://github.com/$GITHUB_REPO${NC}"
+    echo ""
+}
+
 show_menu() {
+    clear
+    show_version
     echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${PURPLE}║${NC}                 ${CYAN}Zsh Configuration Script${NC}                   ${PURPLE}║${NC}"
+    echo -e "${PURPLE}║${NC}                ${CYAN}Zsh Configuration Script${NC}                    ${PURPLE}║${NC}"
     echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     echo -e "${YELLOW}Select an option:${NC}"
-    echo -e "  ${GREEN}0)${NC} Auto Install (Recommended)"
+    echo -e "  ${GREEN}0)${NC} Auto Install (Recommended - Full setup)"
     echo -e "  ${GREEN}1)${NC} Install Zsh"
     echo -e "  ${GREEN}2)${NC} Install Oh My Zsh"
-    echo -e "  ${GREEN}3)${NC} Install plugins (autosuggestions & syntax highlighting)"
+    echo -e "  ${GREEN}3)${NC} Install essential plugins"
     echo -e "  ${GREEN}4)${NC} Set custom theme"
     echo -e "  ${GREEN}5)${NC} Install colorls"
-    echo -e "  ${GREEN}6)${NC} Install AuroraModern Theme"
+    echo -e "  ${GREEN}6)${NC} Install AuroraMinimal Theme (Fast & Clean)"
     echo -e "  ${GREEN}7)${NC} Install Powerlevel10k theme"
     echo -e "  ${GREEN}8)${NC} Set Zsh as default shell"
-    echo -e "  ${GREEN}9)${NC} Exit"
+    echo -e "  ${GREEN}9)${NC} Apply performance optimizations"
+    echo -e "  ${GREEN}u)${NC} Check for updates"
+    echo -e "  ${GREEN}q)${NC} Exit"
     echo ""
 }
 
 # Main execution
 main() {
+    # Check for updates on startup (with timeout)
+    if [[ "${1}" != "--skip-update" ]]; then
+        timeout 10s bash -c 'check_for_updates' 2>/dev/null || print_warning "Update check timed out"
+        echo ""
+    fi
+    
     # Check if running on supported system
     if ! command -v apt-get &> /dev/null; then
         print_error "This script is designed for Debian/Ubuntu systems"
@@ -366,7 +505,7 @@ main() {
     
     while true; do
         show_menu
-        read -p "Enter your choice (0-9): " choice
+        read -p "Enter your choice: " choice
         echo ""
         
         case $choice in
@@ -375,7 +514,12 @@ main() {
             2) install_oh_my_zsh ;;
             3) install_plugins ;;
             4) 
-                echo -e "${CYAN}Available themes:${NC} agnoster, robbyrussell, powerlevel10k/powerlevel10k, AuroraModern"
+                echo -e "${CYAN}Available themes:${NC}"
+                echo "  • AuroraMinimal (recommended)"
+                echo "  • powerlevel10k/powerlevel10k"
+                echo "  • agnoster"
+                echo "  • robbyrussell"
+                echo ""
                 read -p "Enter theme name: " theme
                 if [[ -n "$theme" ]]; then
                     select_theme "$theme"
@@ -384,23 +528,51 @@ main() {
                 fi
                 ;;
             5) install_colorls ;;
-            6) install_aurora_modern_theme ;;
+            6) install_aurora_minimal_theme ;;
             7) install_powerlevel10k ;;
             8) set_zsh_default ;;
-            9) 
-                print_status "Exiting script. Have a great day!"
+            9) optimize_zsh_performance ;;
+            u|U) check_for_updates ;;
+            q|Q) 
+                print_success "Thanks for using the Zsh Setup Script!"
                 exit 0
                 ;;
             *) 
-                print_error "Invalid option selected. Please choose 0-9."
+                print_error "Invalid option. Please choose a valid option."
                 ;;
         esac
         
         echo ""
-        read -p "Press Enter to continue..."
-        clear
+        read -p "Press Enter to continue..." -r
     done
 }
 
-# Run main function
-main
+# Handle command line arguments
+case "${1:-}" in
+    --version|-v)
+        show_version
+        exit 0
+        ;;
+    --help|-h)
+        show_version
+        echo "Usage: $0 [OPTIONS]"
+        echo ""
+        echo "Options:"
+        echo "  --version, -v     Show version information"
+        echo "  --help, -h        Show this help message"
+        echo "  --skip-update     Skip automatic update check"
+        echo "  --auto            Run automatic installation"
+        echo ""
+        exit 0
+        ;;
+    --auto)
+        auto_install
+        exit $?
+        ;;
+    --skip-update)
+        main --skip-update
+        ;;
+    *)
+        main "$@"
+        ;;
+esac
