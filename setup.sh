@@ -251,64 +251,34 @@ install_aurora_minimal_theme() {
     
     local theme_path="${ZSH_CUSTOM}/themes/AuroraMinimal.zsh-theme"
     cat <<'EOF' > "$theme_path"
-# AuroraMinimal Theme - Ultra Clean & Minimal
-# Simple two-line prompt with essential info only
+# AuroraMinimal Theme - Ultra Clean & Minimal (No Git, No Time)
+# Simple two-line prompt with only essential info
 
-# Clean color definitions
+# Colors
 readonly C_USER="%F{green}"
 readonly C_HOST="%F{blue}" 
 readonly C_DIR="%F{cyan}"
-readonly C_GIT="%F{magenta}"
-readonly C_DIRTY="%F{red}"
-readonly C_CLEAN="%F{green}"
 readonly C_PROMPT="%F{white}"
-readonly C_TIME="%F{242}"
 readonly C_RESET="%f"
 
-# Lightning-fast git status
-git_info() {
-    git rev-parse --is-inside-work-tree &>/dev/null || return
-    
-    local branch
-    branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
-    [[ -z "$branch" ]] && return
-    
-    # Ultra-fast dirty check
-    local status=""
-    if [[ -n "$(git status --porcelain 2>/dev/null | head -1)" ]]; then
-        status="${C_DIRTY}*${C_RESET}"
-    fi
-    
-    echo " ${C_GIT}($branch)${status}"
-}
+# Completely disable git info
+git_info() { :; }
 
-# Optional: Show execution time for slow commands
-preexec() {
-    timer=$(($(date +%s%0N)/1000000))
-}
-
-precmd() {
-    if [ $timer ]; then
-        local now=$(($(date +%s%0N)/1000000))
-        local elapsed=$(($now-$timer))
-        if (( elapsed > 2000 )); then
-            echo "${C_TIME}⏱ ${elapsed}ms${C_RESET}"
-        fi
-        unset timer
-    fi
-}
+# Disable execution timer
+preexec() { :; }
+precmd() { :; }
 
 # Ultra-minimal two-line prompt
-PROMPT='${C_USER}%n${C_RESET}@${C_HOST}%m${C_RESET} ${C_DIR}%~${C_RESET}$(git_info)
+PROMPT='${C_USER}%n${C_RESET}@${C_HOST}%m${C_RESET} ${C_DIR}%~${C_RESET}
 ${C_PROMPT}> ${C_RESET}'
 
-# Clean right prompt with just time
-RPROMPT='${C_TIME}%D{%H:%M}${C_RESET}'
+# No right prompt
+RPROMPT=''
 
 # Enable prompt substitution
 setopt PROMPT_SUBST
 
-# Performance settings
+# Performance-friendly options
 setopt NO_BEEP
 setopt HIST_VERIFY
 setopt SHARE_HISTORY
@@ -316,24 +286,24 @@ setopt APPEND_HISTORY
 setopt HIST_IGNORE_DUPS
 setopt HIST_IGNORE_SPACE
 
-# Clean, essential aliases
+# Useful aliases
 alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
 alias l='ls -la'
 alias ll='ls -l'
 alias la='ls -la'
-
 EOF
     
     if [ -f "$theme_path" ]; then
-        print_success "AuroraMinimal Theme created successfully"
+        print_success "AuroraMinimal Theme created successfully (Clean Version)"
         select_theme "AuroraMinimal"
     else
         print_error "Failed to create AuroraMinimal Theme"
         return 1
     fi
 }
+
 
 install_powerlevel10k() {
     print_status "Installing Powerlevel10k theme..."
